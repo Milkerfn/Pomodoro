@@ -3,6 +3,9 @@ import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput } from 'rea
 import Svg, { Circle } from 'react-native-svg';
 import Sound from 'react-native-sound';
 
+// Habilitar o modo de depuração para a biblioteca de som
+Sound.setCategory('Playback');
+
 const PomodoroTimer = () => {
   const [workTime, setWorkTime] = useState(25 * 60); // 25 minutes
   const [breakTime, setBreakTime] = useState(5 * 60); // 5 minutes
@@ -69,7 +72,13 @@ const PomodoroTimer = () => {
         console.log('Failed to load the sound', error);
         return;
       }
-      sound.play(() => {
+      console.log('Sound loaded successfully');
+      sound.play((success) => {
+        if (success) {
+          console.log('Sound played successfully');
+        } else {
+          console.log('Sound playback failed');
+        }
         sound.release();
       });
     });
@@ -150,7 +159,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
   },
-
   adjustContainer: {
     marginTop: 20,
     alignItems: 'center',
