@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import Sound from 'react-native-sound';
+import KeepAwake from 'react-native-keep-awake';
 
 // Habilitar o modo de depuração para a biblioteca de som
 Sound.setCategory('Playback');
@@ -18,6 +19,7 @@ const PomodoroTimer = () => {
   useEffect(() => {
     let timer;
     if (isRunning) {
+      KeepAwake.activate();
       timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev === 1) {
@@ -28,15 +30,24 @@ const PomodoroTimer = () => {
           return prev - 1;
         });
       }, 1000);
-    } else if (!isRunning && timeLeft !== 0) {
-      clearInterval(timer);
+    } else {
+      KeepAwake.deactivate();
+      if (timeLeft !== 0) {
+        clearInterval(timer);
+      }
     }
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      KeepAwake.deactivate();
+    };
   }, [isRunning, timeLeft, isWork, workTime, breakTime]);
 
   useEffect(() => {
     setTimeLeft(isWork ? workTime : breakTime);
-  }, [isWork, workTime, breakTime]);
+    if (isRunning) {
+      playSound('start');
+    }
+  }, [isWork, workTime, breakTime, isRunning]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -64,9 +75,11 @@ const PomodoroTimer = () => {
   const handleSwitch = () => {
     setIsWork(!isWork);
     setTimeLeft(!isWork ? workTime : breakTime);
+    playSound('start');
   };
 
   const playSound = (type) => {
+    console.log(`Attempting to play sound: ${type}`);
     const sound = new Sound(type === 'start' ? 'start.mp3' : 'end.mp3', Sound.MAIN_BUNDLE, (error) => {
       if (error) {
         console.log('Failed to load the sound', error);
@@ -103,7 +116,7 @@ const PomodoroTimer = () => {
         <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
       </Svg>
       <View style={styles.buttonContainer}>
-        <TouchableOpacity onPress={() => setIsRunning(!isRunning)} style={styles.button}>
+        <TouchableOpacity onPress={() => { setIsRunning(!isRunning); if (!isRunning) playSound('start'); }} style={styles.button}>
           <Text style={styles.buttonText}>{isRunning ? 'Pause' : 'Start'}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleReset} style={styles.button}>
